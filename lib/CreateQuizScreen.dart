@@ -29,60 +29,56 @@ class CreateQuizScreen extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () async {
-                // Trim text before validation
                 String quizName = _quizNameController.text.trim();
                 String totalMarks = _totalMarksController.text.trim();
-
-                // Validate trimmed text
-                if (quizName.isNotEmpty && totalMarks.isNotEmpty) {
-                  try {
-                    int marks = int.parse(totalMarks);
-                    // Prepare the quiz data to send to the backend
-                    Map<String, dynamic> quizData = {
-                      'quizName': quizName,
-                      'totalMarks': marks,
-                    };
-
-                    // Send an HTTP POST request to save the quiz data
-                    Uri url = Uri.parse('http://10.152.3.231:8080/quiz/savequiz');
-                    final response = await http.post(
-                      url,
-                      body: jsonEncode(quizData),
-                      headers: {'Content-Type': 'application/json'},
-                    );
-
-                    if (response.statusCode == 201) {
-                      // Parse the response body to get the quizId
-                      Map<String, dynamic> responseData = jsonDecode(response.body);
-                      int quizId = responseData['quizId'];
-
-                      // Navigate to the CreateQuestionScreen with quizId
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CreateQuestionScreen(
-                            quizId: quizId,
-                            quizName: quizName,
-                            totalMarks: marks,
-                          ),
-                        ),
-                      );
-                    } else {
-                      // Show an error message if the backend request fails
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to save quiz data.')),
-                      );
-                    }
-                  } catch (e) {
-                    // Handle invalid input (non-numeric) for total marks
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Please enter a valid number for total marks.')),
-                    );
-                  }
-                } else {
-                  // Show an error message if quiz name or total marks is empty
+                if (quizName.isEmpty || totalMarks.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Please enter quiz name and total marks.')),
+                  );
+                  return;
+                }
+
+                try {
+                  int marks = int.parse(totalMarks);
+                  Map<String, dynamic> quizData = {
+                    'quizName': quizName,
+                    'totalMarks': marks,
+                  };
+
+                  Uri url = Uri.parse('http://10.152.3.231:8080/quiz/savequiz');
+                  final response = await http.post(
+                    url,
+                    body: jsonEncode(quizData),
+                    headers: {'Content-Type': 'application/json'},
+                  );
+
+                  if (response.statusCode == 201) {
+                    int quizId = int.parse(response.body);
+
+                    // Print quiz data to console
+                    print('Quiz ID: $quizId');
+                    print('Quiz Name: $quizName');
+                    print('Total Marks: $marks');
+
+                    // Redirect to CreateQuestionScreen
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CreateQuestionScreen(
+                          quizId: quizId,
+                          quizName: quizName,
+                          totalMarks: marks,
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to save quiz data.')),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please enter a valid number for total marks.')),
                   );
                 }
               },
@@ -93,4 +89,11 @@ class CreateQuizScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+void main() {
+  runApp(MaterialApp(
+    title: 'Quiz App',
+    home: CreateQuizScreen(),
+  ));
 }
